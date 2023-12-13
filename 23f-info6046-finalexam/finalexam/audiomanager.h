@@ -8,6 +8,13 @@
 void CheckError(FMOD_RESULT result, const char* file, int line);
 #define FMODCheckError(result) CheckError(result, __FILE__, __LINE__)
 
+enum DSPType
+{
+	REVERB,
+	DISTORTION,
+	PITCH_SHIFT,
+};
+
 class AudioManager
 {
 public:
@@ -21,8 +28,8 @@ public:
 
 	void Update();
 
-	// TODO: Create a function for creating a DSP of a specific Type (m_DSPs)
-	//		 or create them in Initialize() flagged with a different TODO tag.
+	void CreateDSP(DSPType type);
+	void SetActiveDSP(int index);
 
 	// TODO: Create a function to set a DSP to be active. (m_ActiveDSP)
 
@@ -31,14 +38,15 @@ public:
 	bool IsRecording() const { return m_IsRecording; }
 
 	// TODO: Create a function to PlayRecordedSound
-	// TODO: Create a function to PlayARandomSound
+	void PlayRecordedSound();
+	void PlayARandomSound();
 
 	bool IsSoundPlaying() const;
 
 private:
 	FMOD_RESULT RecordCallback(FMOD_SOUND* sound, void* data, unsigned int datalen);
 	void ProcessRecording();
-	void GetRandomSound(FMOD::Sound** sound);
+	FMOD::Sound* GetRandomSound();
 
 	bool m_IsInitialized = false;
 	bool m_IsRecording = false;

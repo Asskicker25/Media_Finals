@@ -1,4 +1,5 @@
 #include "audiomanager.h"
+#include "Random.h"
 
 #include <Windows.h>
 #ifdef PlaySound
@@ -30,7 +31,7 @@ void AudioManager::LoadSounds(std::vector<std::string>& soundPaths)
 {
 	for (std::string& path : soundPaths)
 	{
-		FMOD::Sound* sound;
+		FMOD::Sound* sound = nullptr;
 
 		FMOD_RESULT result = m_System->createSound(path.c_str(), FMOD_DEFAULT, 0, &sound);
 		FMODCheckError(result);
@@ -74,6 +75,10 @@ void AudioManager::Initialize()
 	// TODO: Create DSPs
 	// STore in m_DSPs
 
+	CreateDSP(REVERB);
+	CreateDSP(DISTORTION);
+	CreateDSP(PITCH_SHIFT);
+
 	m_IsInitialized = true;
 }
 
@@ -108,6 +113,49 @@ void AudioManager::Update()
 	{
 		ProcessRecording();
 	}
+}
+
+void AudioManager::CreateDSP(DSPType type)
+{
+	FMOD::DSP* dsp = nullptr;
+	FMOD_RESULT result = FMOD_OK;
+
+	// TODO: Create DSP based on type
+	switch (type)
+	{
+	case REVERB:
+		result = m_System->createDSPByType(FMOD_DSP_TYPE_SFXREVERB, &dsp);
+		dsp->setParameterFloat(FMOD_DSP_SFXREVERB_DECAYTIME, 1500.0f); 
+		dsp->setParameterFloat(FMOD_DSP_SFXREVERB_EARLYDELAY, 200.0f);  
+		break;
+
+
+	case DISTORTION:
+		result = m_System->createDSPByType(FMOD_DSP_TYPE_DISTORTION, &dsp);
+		dsp->setParameterFloat(FMOD_DSP_DISTORTION_LEVEL, 1.0f); 
+		break;
+
+	case PITCH_SHIFT:
+		result = m_System->createDSPByType(FMOD_DSP_TYPE_PITCHSHIFT, &dsp);
+		dsp->setParameterFloat(FMOD_DSP_PITCHSHIFT_PITCH, 20.0f);
+		break;
+
+	}
+
+	FMODCheckError(result);
+
+	if (dsp)
+	{
+		m_DSPs.push_back(dsp);
+	}
+}
+
+void AudioManager::SetActiveDSP(int index)
+{
+	m_ActiveDSP = index;
+
+	FMOD_RESULT result = m_Channel->addDSP(0, m_DSPs[m_ActiveDSP]);
+	FMODCheckError(result);
 }
 
 void AudioManager::BeginRecording()
@@ -149,6 +197,34 @@ void AudioManager::EndRecording()
 
 
 	m_IsRecording = false;
+}
+
+void AudioManager::PlayRecordedSound()
+{
+	if (m_RecordingSound)
+	{
+		FMOD_RESULT result = m_System->playSound(m_RecordingSound, 0, false, &m_Channel);
+		FMODCheckError(result);
+
+		result = m_Channel->addDSP(0, m_DSPs[m_ActiveDSP]);
+		FMODCheckError(result);
+	}
+}
+
+void AudioManager::PlayARandomSound()
+{
+
+	FMOD::Sound* randomSound = GetRandomSound();
+
+	if (randomSound)
+	{
+		FMOD_RESULT result = m_System->playSound(randomSound, 0, false, &m_Channel);
+		FMODCheckError(result);
+
+
+		result = m_Channel->addDSP(0, m_DSPs[m_ActiveDSP]);
+		FMODCheckError(result);
+	}
 }
 
 bool AudioManager::IsSoundPlaying() const
@@ -197,7 +273,7 @@ void AudioManager::ProcessRecording()
 		// Lock a block of memory of our sound to read data
 		// https://www.fmod.com/docs/2.00/api/core-api-sound.html#sound_lock
 		result = m_RecordingSound->lock(
-			m_LastRecordPosition * m_ExInfo.numchannels * 2, 
+			m_LastRecordPosition * m_ExInfo.numchannels * 2,
 			blockLength * m_ExInfo.numchannels * 2,
 			&ptr1, &ptr2, &len1, &len2);
 		FMODCheckError(result);
@@ -207,7 +283,7 @@ void AudioManager::ProcessRecording()
 		// length then ptr2 will be nul and len2 will be 0
 		if (ptr1 && len1 != 0)
 		{
- 			m_RecordingLength += len1;
+			m_RecordingLength += len1;
 			// Write the data to our ringbuffer
 			// TODO: m_RingBuffer.Write(...)
 		}
@@ -222,9 +298,9 @@ void AudioManager::ProcessRecording()
 		// https://www.fmod.com/docs/2.00/api/core-api-sound.html#sound_unlock
 		result = m_RecordingSound->unlock(ptr1, ptr2, len1, len2);
 		FMODCheckError(result);
-	}   
+	}
 
-	printf("Record buffer pos = %6d : Record time = %02d:%02d.%02d\r", 
+	printf("Record buffer pos = %6d : Record time = %02d:%02d.%02d\r",
 		m_RecordPosition, m_RecordingLength / m_ExInfo.defaultfrequency / m_ExInfo.numchannels / 2 / 60,	// Minutes
 		(m_RecordingLength / m_ExInfo.defaultfrequency / m_ExInfo.numchannels / 2) % 60,					// Seconds
 		(m_RecordingLength / (m_ExInfo.defaultfrequency / 100) / m_ExInfo.numchannels / 2) % 100);			// Milliseconds
@@ -233,7 +309,9 @@ void AudioManager::ProcessRecording()
 }
 
 
-void AudioManager::GetRandomSound(FMOD::Sound** sound)
+FMOD::Sound* AudioManager::GetRandomSound()
 {
+	int random = GetRandomIntNumber(0, m_Sounds.size() - 1);
 
+	return m_Sounds[random];
 }
