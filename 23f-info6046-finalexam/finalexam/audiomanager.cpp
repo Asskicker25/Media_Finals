@@ -27,20 +27,6 @@ AudioManager::~AudioManager()
 {
 }
 
-void AudioManager::LoadSounds(std::vector<std::string>& soundPaths)
-{
-	for (std::string& path : soundPaths)
-	{
-		FMOD::Sound* sound = nullptr;
-
-		FMOD_RESULT result = m_System->createSound(path.c_str(), FMOD_DEFAULT, 0, &sound);
-		FMODCheckError(result);
-
-		m_Sounds.push_back(sound);
-	}
-
-}
-
 
 void AudioManager::Initialize()
 {
@@ -166,7 +152,7 @@ void AudioManager::BeginRecording()
 	if (m_IsRecording)
 		return;
 
-	FMOD_RESULT result = m_System->createSound(0, FMOD_LOOP_NORMAL | FMOD_OPENUSER, &m_ExInfo, &m_RecordingSound);
+	FMOD_RESULT result = m_System->createSound(0, FMOD_DEFAULT | FMOD_OPENUSER, &m_ExInfo, &m_RecordingSound);
 	FMODCheckError(result);
 
 	// https://www.fmod.com/docs/2.00/api/core-api-system.html#system_recordstart
@@ -194,7 +180,9 @@ void AudioManager::EndRecording()
 	// https://www.fmod.com/docs/2.00/api/core-api-system.html#system_recordstop
 	FMOD_RESULT result = m_System->recordStop(0);
 	FMODCheckError(result);
+	
 
+	m_RecordedSounds.push_back(m_RecordingSound);
 
 	m_IsRecording = false;
 }
@@ -209,6 +197,13 @@ void AudioManager::PlayRecordedSound()
 		result = m_Channel->addDSP(0, m_DSPs[m_ActiveDSP]);
 		FMODCheckError(result);
 	}
+}
+
+FMOD::Sound* AudioManager::GetRandomSound()
+{
+	int random = GetRandomIntNumber(0, m_RecordedSounds.size() - 1);
+
+	return m_RecordedSounds[random];
 }
 
 void AudioManager::PlayARandomSound()
@@ -246,6 +241,7 @@ FMOD_RESULT AudioManager::RecordCallback(FMOD_SOUND* sound, void* data, unsigned
 	size_t sampleCount = datalen / 2;
 	m_RingBuffer.Write(buffer, sampleCount);
 
+	
 	return FMOD_OK;
 }
 
@@ -286,12 +282,15 @@ void AudioManager::ProcessRecording()
 			m_RecordingLength += len1;
 			// Write the data to our ringbuffer
 			// TODO: m_RingBuffer.Write(...)
+			m_RingBuffer.Write((float*)ptr1, len1 / sizeof(float));
 		}
 		if (ptr2 && len2 != 0)
 		{
 			m_RecordingLength += len2;
 			// Write the data to our ringbuffer
 			// TODO: m_RingBuffer.Write(...)
+
+			m_RingBuffer.Write((float*)ptr2, len2 / sizeof(float));
 		}
 
 		// Unlock the block of memory
@@ -306,12 +305,6 @@ void AudioManager::ProcessRecording()
 		(m_RecordingLength / (m_ExInfo.defaultfrequency / 100) / m_ExInfo.numchannels / 2) % 100);			// Milliseconds
 
 	m_LastRecordPosition = m_RecordPosition;
+
 }
 
-
-FMOD::Sound* AudioManager::GetRandomSound()
-{
-	int random = GetRandomIntNumber(0, m_Sounds.size() - 1);
-
-	return m_Sounds[random];
-}

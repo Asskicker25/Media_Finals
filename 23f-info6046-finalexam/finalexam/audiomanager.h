@@ -21,8 +21,6 @@ public:
 	AudioManager();
 	~AudioManager();
 
-	void LoadSounds(std::vector<std::string>& soundPaths);
-
 	void Initialize();
 	void Destroy();
 
@@ -58,7 +56,7 @@ private:
 	FMOD::Sound* m_RecordingSound = nullptr;
 
 	std::vector<FMOD::DSP*> m_DSPs;
-	std::vector<FMOD::Sound*> m_Sounds;
+	std::vector<FMOD::Sound*> m_RecordedSounds;
 
 	RingBuffer<float, 10000> m_RingBuffer;
 

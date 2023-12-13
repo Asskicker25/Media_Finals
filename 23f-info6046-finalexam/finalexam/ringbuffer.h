@@ -1,22 +1,50 @@
 #pragma once
 
-template <typename T, size_t Size>
+template <typename T, int Size>
 class RingBuffer
 {
 public:
-	void Write(const T* input, size_t count)
+	void Write(const T* input, int count)
 	{
-		// TODO: Implement this
+		for (int i = 0; i < count; i++)
+		{
+			m_Data[m_Head] = input[i];
+			AdvanceHead();
+		}
 	}
 
-	void Read(T* output, size_t count)
+	void Read(T* output, int count)
 	{
-		// TODO: Implement this
+		for (int i = 0; i < count; i++)
+		{
+			output[i] = m_Data[m_Tail];
+			AdvanceTail();
+		}
+	}
+
+	int GetSize()
+	{
+		return Size;
 	}
 
 private:
+
 	T m_Data[Size];
-	const size_t m_Size = Size;
-	size_t m_Head = 0;
-	size_t m_Tail = 0;
+	const int m_Size = Size;
+	int m_Head = 0;
+	int m_Tail = 0;
+
+	void AdvanceHead()
+	{
+		m_Head = (m_Head + 1) % m_Size;
+		if (m_Head == m_Tail)
+		{
+			AdvanceTail();
+		}
+	}
+
+	void AdvanceTail()
+	{
+		m_Tail = (m_Tail + 1) % m_Size;
+	}
 };

@@ -118,9 +118,6 @@ int main(int argc, char** argv)
 
     g_AudioManager.Initialize();
 
-    g_AudioManager.LoadSounds(soundPaths);
-
-
     glutMainLoop();
 
     g_AudioManager.Destroy();
