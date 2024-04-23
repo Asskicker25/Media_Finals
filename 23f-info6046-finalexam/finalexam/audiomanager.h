@@ -4,6 +4,7 @@
 #include <vector>
 #include "ringbuffer.h"
 #include <string>
+#include <fstream>
 
 void CheckError(FMOD_RESULT result, const char* file, int line);
 #define FMODCheckError(result) CheckError(result, __FILE__, __LINE__)
@@ -59,6 +60,8 @@ private:
 	std::vector<FMOD::Sound*> m_RecordedSounds;
 
 	RingBuffer<float, 10000> m_RingBuffer;
+
+	std::ofstream m_TextFile;
 
 	unsigned int m_SoundLength = 0;
 	unsigned int m_ActiveDSP = 0;

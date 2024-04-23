@@ -274,6 +274,7 @@ void AudioManager::ProcessRecording()
 			&ptr1, &ptr2, &len1, &len2);
 		FMODCheckError(result);
 
+
 		// If the data is looping then ptr1 and len1 will be the last section of the information, and 
 		// ptr2 and len2 will start at index 0 again. If the first ptr1 and len1 does not exceed the
 		// length then ptr2 will be nul and len2 will be 0
@@ -282,6 +283,7 @@ void AudioManager::ProcessRecording()
 			m_RecordingLength += len1;
 			// Write the data to our ringbuffer
 			// TODO: m_RingBuffer.Write(...)
+
 			m_RingBuffer.Write((float*)ptr1, len1 / sizeof(float));
 		}
 		if (ptr2 && len2 != 0)
@@ -292,6 +294,22 @@ void AudioManager::ProcessRecording()
 
 			m_RingBuffer.Write((float*)ptr2, len2 / sizeof(float));
 		}
+
+		m_TextFile.open("AudioFile.txt");
+		if (!m_TextFile.is_open())
+		{
+			printf("Failed to open text file for writing.\n");
+			return;
+		}
+
+		float buffer[1000];
+		m_RingBuffer.Read(buffer, 1000);
+
+		for (int i = 0; i < 1000; ++i)
+		{
+			m_TextFile << buffer[i] << " ";
+		}
+		m_TextFile << "\n";
 
 		// Unlock the block of memory
 		// https://www.fmod.com/docs/2.00/api/core-api-sound.html#sound_unlock

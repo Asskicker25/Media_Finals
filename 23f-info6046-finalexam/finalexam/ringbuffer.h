@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iostream>
+
 template <typename T, int Size>
 class RingBuffer
 {
@@ -9,6 +11,7 @@ public:
 		for (int i = 0; i < count; i++)
 		{
 			m_Data[m_Head] = input[i];
+			//std::cout << "Data : " << input[i] << std::endl;
 			AdvanceHead();
 		}
 	}
